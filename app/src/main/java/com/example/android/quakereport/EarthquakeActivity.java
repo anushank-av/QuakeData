@@ -30,15 +30,36 @@ import java.util.List;
 
 public class EarthquakeActivity extends AppCompatActivity {
 
+    ListView earthquakeListView;
+    QuakeDataAapter mQuakeAdapter = null;
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
-    private static final String REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=6&limit=10";
+    private static final String REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=5&limit=10";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
-       //Get the earthquakes
+
+
+
+        earthquakeListView = (ListView) findViewById(R.id.list);
+
+        // Create a new {@link ArrayAdapter} of earthquakes
+        mQuakeAdapter = new QuakeDataAapter(this,new ArrayList<QuakeData>());
+        // Set the adapter on the {@link ListView}
+        // so the list can be populated in the user interface
+        earthquakeListView.setAdapter(mQuakeAdapter);
+        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                QuakeData clickedData = mQuakeAdapter.getItem(i);
+                Uri clickedUri = Uri.parse(clickedData.getUrl());
+                Intent intent = new Intent(Intent.ACTION_VIEW,clickedUri);
+                startActivity(intent);
+            }
+        });
+        //Get the earthquakes
         new LoadQuakeData().execute(REQUEST_URL);
 
 
@@ -56,23 +77,11 @@ public class EarthquakeActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(List<QuakeData> quakeDatas) {
             // Find a reference to the {@link ListView} in the layout
-            ListView earthquakeListView = (ListView) findViewById(R.id.list);
+            mQuakeAdapter.clear();
+            if (quakeDatas!=null){
+                mQuakeAdapter.addAll(quakeDatas);
+            }
 
-            // Create a new {@link ArrayAdapter} of earthquakes
-            final QuakeDataAapter mQuakeAdapter = new QuakeDataAapter(getApplicationContext(),quakeDatas);
-
-            // Set the adapter on the {@link ListView}
-            // so the list can be populated in the user interface
-            earthquakeListView.setAdapter(mQuakeAdapter);
-            earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    QuakeData clickedData = mQuakeAdapter.getItem(i);
-                    Uri clickedUri = Uri.parse(clickedData.getUrl());
-                    Intent intent = new Intent(Intent.ACTION_VIEW,clickedUri);
-                    startActivity(intent);
-                }
-            });
         }
     }
 }
