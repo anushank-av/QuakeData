@@ -23,7 +23,7 @@ import java.util.List;
 
 public class QuakeDataAapter extends ArrayAdapter<QuakeData> {
 
-    public QuakeDataAapter(Context context, ArrayList<QuakeData> quakeDatas) {
+    public QuakeDataAapter(Context context, List<QuakeData> quakeDatas) {
         super(context,0,quakeDatas);
     }
 
