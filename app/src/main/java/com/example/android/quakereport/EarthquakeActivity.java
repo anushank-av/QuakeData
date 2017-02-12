@@ -18,13 +18,17 @@ package com.example.android.quakereport;
 import android.app.LoaderManager;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -40,7 +44,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     ListView earthquakeListView;
     QuakeDataAapter mQuakeAdapter = null;
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
-    private static final String REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=2&limit=20";
+    private static final String REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,9 +88,37 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id){
+            case R.id.action_settings:startActivity(new Intent(EarthquakeActivity.this,Settings.class));
+                return true;
+
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+       getMenuInflater().inflate(R.menu.menu_settings,menu);
+        return true;
+    }
+
+    @Override
     public Loader<List<QuakeData>> onCreateLoader(int i, Bundle bundle) {
-        Log.i(LOG_TAG,"Loader Creating");
-        return new QuakeDataLoader(this,bundle.getString("url"));
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String query = sharedPreferences.getString(getString(R.string.settings_min_magnitude_key),getString(R.string.settings_min_magnitude_default));
+        String orderBy = sharedPreferences.getString(
+                getString(R.string.settings_order_by_key),
+                getString(R.string.settings_order_by_default)
+        );
+        Uri requestUri = Uri.parse(bundle.getString("url"));
+        Uri.Builder requestBuider = requestUri.buildUpon();
+        requestBuider.appendQueryParameter("format","geojson");
+        requestBuider.appendQueryParameter("limit","10");
+        requestBuider.appendQueryParameter("minmag",query);
+        requestBuider.appendQueryParameter("orderby",orderBy);
+        return new QuakeDataLoader(this,requestBuider.toString());
     }
 
     @Override
