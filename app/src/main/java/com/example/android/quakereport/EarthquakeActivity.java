@@ -15,25 +15,32 @@
  */
 package com.example.android.quakereport;
 
+import android.app.LoaderManager;
 import android.content.Intent;
+import android.content.Loader;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class EarthquakeActivity extends AppCompatActivity {
+public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<QuakeData>> {
 
     ListView earthquakeListView;
     QuakeDataAapter mQuakeAdapter = null;
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
-    private static final String REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=5&limit=10";
+    private static final String REQUEST_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=2&limit=20";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +57,7 @@ public class EarthquakeActivity extends AppCompatActivity {
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
         earthquakeListView.setAdapter(mQuakeAdapter);
+        earthquakeListView.setEmptyView(findViewById(R.id.emptyView));
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -60,28 +68,45 @@ public class EarthquakeActivity extends AppCompatActivity {
             }
         });
         //Get the earthquakes
-        new LoadQuakeData().execute(REQUEST_URL);
-
-
-    }
-    private class LoadQuakeData extends AsyncTask<String,Void,List<QuakeData>>{
-
-        @Override
-        protected List<QuakeData> doInBackground(String... strings) {
-            if(strings.length<1 || strings[0] == null){
-                return null;
-            }
-            return QueryUtils.extractEarthquakes(strings[0]);
+        Bundle b = new Bundle();
+        b.putString("url",REQUEST_URL);
+        ConnectivityManager cm = (ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo ic = cm.getActiveNetworkInfo();
+        if (ic!=null&&ic.isConnectedOrConnecting()) {
+            getLoaderManager().initLoader(0, b, this);
+        }
+        else
+        {
+            TextView empty = (TextView)findViewById(R.id.emptyView);
+            empty.setText("No Internet connection");
         }
 
-        @Override
-        protected void onPostExecute(List<QuakeData> quakeDatas) {
-            // Find a reference to the {@link ListView} in the layout
-            mQuakeAdapter.clear();
-            if (quakeDatas!=null){
-                mQuakeAdapter.addAll(quakeDatas);
-            }
+    }
 
+    @Override
+    public Loader<List<QuakeData>> onCreateLoader(int i, Bundle bundle) {
+        Log.i(LOG_TAG,"Loader Creating");
+        return new QuakeDataLoader(this,bundle.getString("url"));
+    }
+
+    @Override
+    public void onLoadFinished(Loader<List<QuakeData>> loader, List<QuakeData> quakeDatas) {
+        TextView empty = (TextView)findViewById(R.id.emptyView);
+        empty.setText("Nothing to show");
+        ProgressBar mBar = (ProgressBar)findViewById(R.id.loading_spinner);
+        mBar.setVisibility(View.GONE);
+        Log.i(LOG_TAG,"Loader finishing");
+        mQuakeAdapter.clear();
+        if (quakeDatas!=null) {
+            mQuakeAdapter.addAll(quakeDatas);
         }
     }
+
+    @Override
+    public void onLoaderReset(Loader<List<QuakeData>> loader) {
+        mQuakeAdapter.addAll(new ArrayList<QuakeData>());
+        Log.i(LOG_TAG,"Loader Resetting");
+    }
+
+
 }

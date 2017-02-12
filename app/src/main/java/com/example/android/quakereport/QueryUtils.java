@@ -36,6 +36,11 @@ public final class QueryUtils {
      * parsing a JSON response.
      */
     public static ArrayList<QuakeData> extractEarthquakes(String queryUrl) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         //Generate a url of Url type
         String reply = "";
 
@@ -52,6 +57,7 @@ public final class QueryUtils {
     }
 
     private static String getHTTPData(URL mQueryUrl) throws IOException {
+        Log.i(LOG_TAG,"Starting to fetch Earthquake data");
         String response = "";
         InputStream in = null;
         HttpURLConnection con = null;
